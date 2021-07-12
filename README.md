@@ -16,6 +16,7 @@ For ease of use and optimisation, it also uses:
 -- Quick Start --
 
 Everything you should need to change is in the Config and SignalData modules.
+Both of these should be parented to the main script, which in turn should be parented to ServerScriptService.
 Going through Config, you will need to set the values accordingly:
 
 Set Organisation.Folders.Signals to one parent folder all signals are kept inside.
