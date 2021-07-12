@@ -22,8 +22,9 @@ Going through Config, you will need to set the values accordingly:
 Set Organisation.Folders.Signals to one parent folder all signals are kept inside.
 Subfolders etc. are allowed; the system only looks for a parent named for each signal somewhere within the descendants.
 An example signal has been included to indicate its structure (note this came from a Ro-Scale test place, hence the size)
-The Names.SignalLower, Names.SignalUpper and Names.SignalDetector can be changed in Config - the Model child isn't used by the system.
-The SignalDetector should be on the track such that train hitters touch it.
+It contains a part for the lower light, a part for the upper light & a detector part on the track such that train hitters touch it.
+(It also contains a model named 'Model' which is just the physical object - this system doesn't interact with it at all)
+The names of the other three objects - Names.SignalLower, Names.SignalUpper and Names.SignalDetector can be changed in Config.
 
 You will then need to configure each signal in the SignalData module.
 An example entry looks like:
