@@ -1,13 +1,13 @@
 return {
 	Organisation = {
 		Folders = {
-			Signals = workspace.signalling.signals
+			Signals = workspace.Signals
 		},
 		
 		Names = {
 			SignalLower = 'Lower',
 			SignalUpper = 'Upper',
-			TrainHitter = 'SignalTriggerPart', -- At least one at the front and one at the back.
+			TrainHitter = 'Hitter', -- At least one at the front and one at the back.
 			SignalDetector = 'SignalDetector',
 			AWSDetector = 'AWSMagnet'
 		}
@@ -33,7 +33,7 @@ return {
 	},
 	
 	AWS = {
-		DetectionDebounce = 15, -- More detections on one detector within this time period will not fire
+		DetectionDebounce = 10, -- More detections on one detector within this time period will not fire
 		
 		KeypressEvent = game.ReplicatedStorage.OpenRoSigKeypressEvent, -- Fire this on the client to deactivate!
 		NotClearIsLooped = true, -- Whether to continue playing the 'not clear' sound until a key is pressed
@@ -44,11 +44,11 @@ return {
 		SoundProperties = { Volume = 10, RollOffMaxDistance = 25 }, -- Additional properties to apply.
 		
 		GetPlayer = function(Hitter) -- Player driving the train. Can return nil
-			return Hitter.Parent.DCCProperties.CurrentPlayer.Value
+			return game.Players:FindFirstChildOfClass('Player')
 		end,
 		
 		GetSoundEminator = function(Hitter)
-			return Hitter.Parent.Base
+			return Hitter.Parent:FindFirstChild('Base', true)
 		end,
 		
 		TimedOut = function(Hitter)
