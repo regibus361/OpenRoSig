@@ -1,4 +1,6 @@
--- Last Updated: 3.0.0 (12.07.2021) --
+-- Last Updated: 3.1.0 (13.07.2021) --
+-- You can get this model on Roblox at: https://www.roblox.com/library/7084317546 --
+-- An uncopylocked example place will be ready soon --
 
 
 OpenRoSig is an open source, absolute block railway signalling system based on signalling in the UK.
@@ -16,15 +18,13 @@ For ease of use and optimisation, it also uses:
 -- Quick Start --
 
 Everything you should need to change is in the Config and SignalData modules.
-Both of these should be parented to the main script, which in turn should be parented to ServerScriptService.
 Going through Config, you will need to set the values accordingly:
 
 Set Organisation.Folders.Signals to one parent folder all signals are kept inside.
 Subfolders etc. are allowed; the system only looks for a parent named for each signal somewhere within the descendants.
 An example signal has been included to indicate its structure (note this came from a Ro-Scale test place, hence the size)
-It contains a part for the lower light, a part for the upper light & a detector part on the track such that train hitters touch it.
-(It also contains a model named 'Model' which is just the physical object - this system doesn't interact with it at all)
-The names of the other three objects - Names.SignalLower, Names.SignalUpper and Names.SignalDetector can be changed in Config.
+The Names.SignalLower, Names.SignalUpper and Names.SignalDetector can be changed in Config - the Model child isn't used by the system.
+The SignalDetector should be on the track such that train hitters touch it.
 
 You will then need to configure each signal in the SignalData module.
 An example entry looks like:
@@ -81,3 +81,7 @@ When a block is 'reserved' (or unreserved), a signal and block are passed to the
 The reservation is then added to a queue. If it is at the front of the queue, the ActivateReservation function is called.
 Alternatively, the ActivateReservation function is also called if the reservation at the front of the queue is removed.
 Reservations are automatically removed if a train is deleted (i.e. the hitter is parented out of workspace)
+
+Train hitters also listen for AWS magnet hits. If they hit one, a sound object is created, parented to the sound eminator and played.
+Depending on the signal's aspect (i.e. which type of AWS is played), a connection is created to destroy the sound.
+This is either when a key is pressed (or the event is otherwise fired), or the sound ends.
