@@ -1,6 +1,6 @@
--- Last Updated: 3.1.0 (13.07.2021) --
--- You can get this model on Roblox at: https://www.roblox.com/library/7084317546 --
--- An uncopylocked example place will be ready soon --
+Last Updated: 3.1.0 (13.07.2021)<br />
+You can get this model on Roblox at: https://www.roblox.com/library/7084317546<br />
+An uncopylocked example place will be available soon.<br />
 
 
 OpenRoSig is an open source, absolute block railway signalling system based on signalling in the UK.
