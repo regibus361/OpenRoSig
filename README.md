@@ -1,4 +1,4 @@
-Last Updated: 3.1.0 (13.07.2021)<br />
+Last Updated: 1.1.1 (13.07.2021)<br />
 You can get this model on Roblox at: https://www.roblox.com/library/7084317546<br />
 An uncopylocked example place will be available soon.<br />
 
