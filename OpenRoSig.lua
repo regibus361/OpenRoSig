@@ -267,6 +267,81 @@ end
 
 
 
+-- The AWS system
+local AWSDetectorTouched = function(Detector, Hitter)
+	-- Before anything else, check we're not on debounce
+	if tick() - (Detector:GetAttribute('LastDetection') or 0) < Config.AWS.DetectionDebounce then
+		Detector:SetAttribute('LastDetection', tick()) -- Maybe bad practice, but makes more sense for long trains with more cars
+		return
+	end
+	
+	Detector:SetAttribute('LastDetection', tick()) -- We still need to set it!
+	
+	-- Get its signal
+	local SignalName = Detector.Parent.Name
+	local Signal = Signals[SignalName]
+	local State = Signals[SignalName].State
+	
+	local Sound = Instance.new('Sound')
+	Sound.Name = 'AWSPlayer'
+	Sound.Parent = Config.AWS.GetSoundEminator(Hitter)
+	
+	if State == #Config.States then
+		-- Clear - play ding
+		Sound.SoundId = 'rbxassetid://' .. tostring(Config.AWS.ClearSoundID)
+		Sound:Play()
+		
+		-- Destroy it when it's finished using a connection (could've used a coroutine)
+		local Connection
+		Connection = Sound.Ended:Connect(function()
+			Sound:Destroy()
+			Connection:Disconnect() -- Clean it up
+		end)
+	else
+		-- Not clear - play beep repeatedly until silenced
+		Sound.SoundId = 'rbxassetid://' .. tostring(Config.AWS.NotClearSoundID)
+		Sound:Play()
+		
+		if Config.AWS.NotClearIsLooped == true then
+			Sound.Looped = true -- Loop it
+			local Connection -- Connect its deletion to a keypress event
+			local RequiredPlayer = Config.AWS.GetPlayer(Hitter)
+			
+			print(RequiredPlayer)
+
+			if RequiredPlayer ~= nil then
+				Connection = Config.AWS.KeypressEvent.OnServerEvent:Connect(function(Player, InputType)
+					print(Player, InputType, Connection)
+					if Player == RequiredPlayer and InputType == 'AWS' then
+						Sound:Destroy()
+						Connection:Disconnect()
+					end
+				end)
+				
+				-- Time out if needed
+				if Config.AWS.NotClearTimeout ~= nil then
+					delay(Config.AWS.NotClearTimeout, function()
+						Config.AWS.TimedOut(Hitter)
+						Sound:Destroy()
+						Connection:Disconnect()
+					end)
+				end
+			else
+				Sound:Destroy() -- Just don't bother
+			end
+		else
+			-- As above - sorry about code duplication
+			local Connection
+			Connection = Sound.Ended:Connect(function()
+				Sound:Destroy()
+				Connection:Disconnect() -- Clean it up
+			end)
+		end
+	end
+end
+
+
+
 -- Setup --
 
 -- Connect train hitters to the above
@@ -278,6 +353,8 @@ local NewPart = function(Hitter)
 			if OtherPart.Name == Config.Organisation.Names.SignalDetector then
 				-- It's a detector, so call the above function
 				DetectorTouched(OtherPart, Hitter)
+			elseif OtherPart.Name == Config.Organisation.Names.AWSDetector then
+				AWSDetectorTouched(OtherPart, Hitter)
 			end
 		end)
 		
