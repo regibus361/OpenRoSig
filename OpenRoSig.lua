@@ -14,7 +14,7 @@ local RunService = game:GetService('RunService')
 
 -- Wait a bit between operations.
 local Wait2 = function()
-	RunService.Heartbeat:Wait()
+	--RunService.Heartbeat:Wait()
 end
 
 
@@ -196,20 +196,37 @@ end
 
 
 
-local DetectorTouched = function(Detector, Hitter, IsFront)
+local DetectorTouched = function(Detector, Hitter, IsForward)
 	-- We needn't check if it's a hitter, as only hitters are connected (see below)
 	-- We needn't check that Detector is a detector either
 
 	-- Change the part's current block, and update other block data
+	local SignalName = Detector.Parent.Name -- This assumes detectors are directly parented to the signal!
+	
 	local OldBlockName = Hitter:GetAttribute('SignalBlock')
 	local OldBlock = Blocks[OldBlockName]
-	local SignalName = Detector.Parent.Name -- This assumes detectors are directly parented to the signal!
-	local NewBlockName = Signals[SignalName].Block
-	local NewBlock = Blocks[NewBlockName]
+	
+	local NewBlockName
+	local NewBlock
+	
+	-- Decide new block based on direction
+	if IsForward == true then
+		NewBlockName = Signals[SignalName].Block
+		NewBlock = Blocks[NewBlockName]
+	else
+		-- Get the new block from the previous signal
+		local PrevSignalName = Signals[SignalName].PrevSignals[1]
+		if PrevSignalName ~= nil then -- If it's nil, our 'new block' doesn't exist!
+			NewBlockName = Signals[PrevSignalName].Block
+			NewBlock = Blocks[NewBlockName]
+		end
+	end
+	
 	Hitter:SetAttribute('SignalBlock', NewBlockName)
 
 	if OldBlock ~= nil then -- In case the train just spawned
 		OldBlock.HitterCount -= 1 -- A hitter has left the block
+		print('Left block', OldBlock.HitterCount)
 		if OldBlock.HitterCount == 0 then
 			-- The block has become empty
 			BlockChanged(OldBlockName)
@@ -230,38 +247,41 @@ local DetectorTouched = function(Detector, Hitter, IsFront)
 	end
 
 	Wait2()
+	
+	if NewBlock ~= nil then
+		NewBlock.HitterCount += 1 -- A hitter has entered the block
+		print('Entered block', NewBlock.HitterCount)
+		if NewBlock.HitterCount == 1 then
+			-- The block has just become full (it was 0 before)
+			BlockChanged(NewBlockName)
+			Wait2()
 
-	NewBlock.HitterCount += 1 -- A hitter has entered the block
-	if NewBlock.HitterCount == 1 then
-		-- The block has just become full (it was 0 before)
-		BlockChanged(NewBlockName)
-		Wait2()
+			-- Reserve blocks from this signal
+			local NextSignals = GetNextSignals(SignalName, Config.Reservation.BlocksAhead, false)
+			local ReservedBlocks = {} -- Dictionary!
 
-		-- Reserve blocks from this signal
-		local NextSignals = GetNextSignals(SignalName, Config.Reservation.BlocksAhead, false)
-		local ReservedBlocks = {} -- Dictionary!
-
-		for _, SignalToReserve in ipairs(NextSignals) do
-			local Block = Signals[SignalToReserve].Block
-			if ReservedBlocks[Block] ~= nil then
-				table.insert(ReservedBlocks[Block], SignalToReserve) -- It's full now anyway
-			else
-				ReservedBlocks[Block] = { SignalToReserve }
+			for _, SignalToReserve in ipairs(NextSignals) do
+				local Block = Signals[SignalToReserve].Block
+				if ReservedBlocks[Block] ~= nil then
+					table.insert(ReservedBlocks[Block], SignalToReserve) -- It's full now anyway
+				else
+					ReservedBlocks[Block] = { SignalToReserve }
+				end
 			end
-		end
 
-		-- Now, reserve every block with EXACTLY ONE signal
-		for BlockToReserve, SignalsToReserve in pairs(ReservedBlocks) do
-			if #SignalsToReserve == 1 then
-				ReserveBlock(Hitter, BlockToReserve, SignalsToReserve[1]) -- Reserve it!
+			-- Now, reserve every block with EXACTLY ONE signal
+			for BlockToReserve, SignalsToReserve in pairs(ReservedBlocks) do
+				if #SignalsToReserve == 1 then
+					ReserveBlock(Hitter, BlockToReserve, SignalsToReserve[1]) -- Reserve it!
+				end
 			end
+
+			Wait2()
+
+			-- Unreserve the block we just entered (we don't need it reserved anymore)
+			-- It's easiest to do this now, because we know which signal we had reserved from
+			UnreserveBlock(Hitter, NewBlockName, SignalName)
 		end
-
-		Wait2()
-
-		-- Unreserve the block we just entered (we don't need it reserved anymore)
-		-- It's easiest to do this now, because we know which signal we had reserved from
-		UnreserveBlock(Hitter, NewBlockName, SignalName)
 	end
 end
 
@@ -307,23 +327,25 @@ local AWSDetectorTouched = function(Detector, Hitter)
 			local Connection -- Connect its deletion to a keypress event
 			local RequiredPlayer = Config.AWS.GetPlayer(Hitter)
 			
-			print(RequiredPlayer)
-
 			if RequiredPlayer ~= nil then
+				local Pressed = false
+				
 				Connection = Config.AWS.KeypressEvent.OnServerEvent:Connect(function(Player, InputType)
-					print(Player, InputType, Connection)
 					if Player == RequiredPlayer and InputType == 'AWS' then
 						Sound:Destroy()
-						Connection:Disconnect()
+						if Connection ~= nil then Connection:Disconnect() end -- idk why it's sometimes nil
+						Pressed = true
 					end
 				end)
 				
 				-- Time out if needed
 				if Config.AWS.NotClearTimeout ~= nil then
 					delay(Config.AWS.NotClearTimeout, function()
-						Config.AWS.TimedOut(Hitter)
-						Sound:Destroy()
-						Connection:Disconnect()
+						if Pressed == false then
+							Config.AWS.TimedOut(Hitter)
+							Sound:Destroy()
+							Connection:Disconnect()
+						end
 					end)
 				end
 			else
@@ -345,6 +367,16 @@ end
 -- Setup --
 
 -- Connect train hitters to the above
+local IsForward = function(Detector, Hitter)
+	local DetectorDirection = Detector.CFrame.LookVector
+	local HitterDirection = Hitter.Velocity.Unit
+	
+	-- Check which is closer: the same direction or opposite direction
+	local ForwardMagnitude = (DetectorDirection - HitterDirection).Magnitude
+	local BackwardMagnitude = (DetectorDirection - (HitterDirection * -1)).Magnitude
+	return ForwardMagnitude < BackwardMagnitude
+end
+
 local NewPart = function(Hitter)
 	-- The second clause prevent welds named to the welded part being picked up.
 	if Hitter.Name == Config.Organisation.Names.TrainHitter and Hitter:IsA('BasePart') then
@@ -352,7 +384,7 @@ local NewPart = function(Hitter)
 		Hitter.Touched:Connect(function(OtherPart)
 			if OtherPart.Name == Config.Organisation.Names.SignalDetector then
 				-- It's a detector, so call the above function
-				DetectorTouched(OtherPart, Hitter)
+				DetectorTouched(OtherPart, Hitter, IsForward(OtherPart, Hitter))
 			elseif OtherPart.Name == Config.Organisation.Names.AWSDetector then
 				AWSDetectorTouched(OtherPart, Hitter)
 			end
