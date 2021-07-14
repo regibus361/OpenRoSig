@@ -508,6 +508,8 @@ Functions.Setup = function()
 			Functions.BlockChanged(Block)
 		end
 	end
+	
+	print('bruh')
 end
 
 
@@ -526,7 +528,12 @@ table.sort(Plugins, function(a, b) return a.Priority > b.Priority end)
 for _, Plugin in ipairs(Plugins) do
 	Plugin = Plugin.Plugin -- We don't care about priority anymore
 	
-	for Name, _ in pairs(Plugin) do
+	local PluginFunctions = {}  -- Pre-looping prevents weirdness due to modification of the dictionary inside the loop.
+	for Name, _ in pairs(Plugin) do 
+		table.insert(PluginFunctions, Name) 
+	end
+	
+	for _, Name in ipairs(PluginFunctions) do
 		-- Overwrite the existing function with this function, making the existing function this plugin's 'base' function.
 		
 		-- Obviously, if this function IS a base function, we don't want anything to do with it.
@@ -534,7 +541,7 @@ for _, Plugin in ipairs(Plugins) do
 		if string.sub(Name, #Name - 4, #Name) == '_Base' then
 			continue
 		end
-		
+
 		Plugin[Name .. '_Base'] = Functions[Name] -- Note this isn't necessarily THE base function, as others may have written here
 		Functions[Name] = Plugin[Name] -- When higher priority plugins write their base functions, that'll include our function
 	end
