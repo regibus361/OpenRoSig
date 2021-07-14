@@ -1,6 +1,6 @@
-Last Updated: 1.1.1 (13.07.2021)<br />
-You can get this model on Roblox at: https://www.roblox.com/library/7084317546<br />
-An uncopylocked example place is at: https://www.roblox.com/games/7089261697<br />
+Last Updated: 1.2.0 (14.07.2021)  
+You can get this as a model on Roblox at: https://www.roblox.com/library/7084317546  
+An uncopylocked example place is at: https://www.roblox.com/games/7089261697  
 
 
 OpenRoSig is an open source, absolute block railway signalling system based on signalling in the UK.
@@ -85,3 +85,29 @@ Reservations are automatically removed if a train is deleted (i.e. the hitter is
 Train hitters also listen for AWS magnet hits. If they hit one, a sound object is created, parented to the sound eminator and played.
 Depending on the signal's aspect (i.e. which type of AWS is played), a connection is created to destroy the sound.
 This is either when a key is pressed (or the event is otherwise fired), or the sound ends.
+
+
+-- Plugins --
+
+OpenRoSig supports a primitive plugin system that effectively allows you to overwrite functions in the module.
+Plugins are ModuleScripts inside the OpenRoSig.Plugins folder that have an attribute called Priority.
+This attribute determines a plugin's priority level (lower number = higher priority) to prevent plugins fighting for control.
+A plugin looks like this:
+
+	-- This overwrites the 'Setup' function to print a value.
+	local Plugin = {}
+
+	Plugin.Setup = function()
+		print('Just getting set up now.')
+		Plugin.Setup_Base()
+		print('I\'m all done setting up!')
+	end
+
+	return Plugin
+	
+Plugin.(function name goes here)\_Base is the generic function in the module. Therefore, this plugin still does all the setup.
+If a plugin is higher priority than another plugin, its base function is the lower priority plugin's function.
+For example, say I have a plugin with priority 1 and a plugin with priority 2 accessing the function ExampleFunction.
+When ExampleFunction is called, it calls the function in the priority 1 plugin.
+If that plugin references Plugin.ExampleFunction_Base, that calls the priority 2 plugin, not the 'real' base.
+If the priority 2 plugin also references Plugin.ExampleFunction_Base, that then calls the 'real' base in the original script.
