@@ -293,7 +293,11 @@ end
 
 -- The AWS system
 Functions.AWSDetectorTouched = function(Detector, Hitter)
-	-- Before anything else, check we're not on debounce
+	-- Before anything else, check we're enabled and we're not on debounce
+	if Config.AWS.GetAWSEnabled(Hitter) ~= true then -- On the off chance it returns nil
+		return
+	end
+	
 	if tick() - (Detector:GetAttribute('LastDetection') or 0) < Config.AWS.DetectionDebounce then
 		Detector:SetAttribute('LastDetection', tick()) -- Maybe bad practice, but makes more sense for long trains with more cars
 		return
@@ -508,8 +512,6 @@ Functions.Setup = function()
 			Functions.BlockChanged(Block)
 		end
 	end
-	
-	print('bruh')
 end
 
 
