@@ -1,13 +1,13 @@
 return {
 	Organisation = {
 		Folders = {
-			Signals = workspace.Signals
+			Signals = workspace.signalling.signals
 		},
 		
 		Names = {
 			SignalLower = 'Lower',
 			SignalUpper = 'Upper',
-			TrainHitter = 'Hitter', -- At least one at the front and one at the back.
+			TrainHitter = 'SignalTriggerPart', -- At least one at the front and one at the back.
 			SignalDetector = 'SignalDetector',
 			AWSDetector = 'AWSMagnet'
 		}
@@ -33,9 +33,9 @@ return {
 	},
 	
 	AWS = {
-		DetectionDebounce = 10, -- More detections on one detector within this time period will not fire
+		DetectionDebounce = 15, -- More detections on one detector within this time period will not fire
 		
-		KeypressEvent = game.ReplicatedStorage.OpenRoSigKeypressEvent, -- Fire this on the client to deactivate!
+		KeypressEvent = game.ReplicatedStorage.Remotes.OpenRoSigKeypressEvent, -- Fire this on the client to deactivate!
 		NotClearIsLooped = true, -- Whether to continue playing the 'not clear' sound until a key is pressed
 		NotClearTimeout = 6, -- After this, the AWSTimedOut function is called. nil for no timeout
 		
@@ -44,11 +44,15 @@ return {
 		SoundProperties = { Volume = 10, RollOffMaxDistance = 25 }, -- Additional properties to apply.
 		
 		GetPlayer = function(Hitter) -- Player driving the train. Can return nil
-			return game.Players:FindFirstChildOfClass('Player')
+			return Hitter.Parent.DCCProperties.CurrentPlayer.Value
+		end,
+		
+		GetAWSEnabled = function(Hitter)
+			return Hitter.Parent.DCCProperties.AWSEnabled.Value
 		end,
 		
 		GetSoundEminator = function(Hitter)
-			return Hitter.Parent:FindFirstChild('Base', true)
+			return Hitter.Parent.PrimaryPart
 		end,
 		
 		TimedOut = function(Hitter)
